@@ -1,9 +1,9 @@
 # TiAnchoredPresentation
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/ti-anchoredpresentation-hero-dark-transparent.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/ti-anchoredpresentation-hero-light-transparent.png">
-  <img alt="An avatar control morphing into an anchored glass popover with custom content" src="assets/ti-anchoredpresentation-hero-light-transparent.png" width="720">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/ti-anchoredpresentation-hero-dark.jpg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/ti-anchoredpresentation-hero-light.jpg">
+  <img alt="An avatar control morphing into an anchored glass popover with custom content" src="assets/ti-anchoredpresentation-hero-light.jpg" width="720">
 </picture>
 
 `ti.anchoredpresentation` presents native action sheets and custom-content popovers from Titanium views, buttons, navigation bar buttons, and toolbar items.

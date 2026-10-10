@@ -1,6 +1,6 @@
-# GitHub hero image prompts
+# Original GitHub hero image prompts
 
-Generated with the built-in image_gen tool. Both outputs use genuine RGBA transparency. The dark version edits the light version to preserve composition.
+These prompts describe the original artwork, since replaced in the README by user-supplied light/dark JPEG illustrations. Generated with the built-in image_gen tool. Both outputs use genuine RGBA transparency. The dark version edits the light version to preserve composition.
 
 ## Light mode
 
@@ -9,4 +9,3 @@ Use case: stylized-concept. Asset type: GitHub README hero illustration for TiAn
 ## Dark mode
 
 Use case: lighting-weather. Asset type: matching DARK MODE GitHub README hero for TiAnchoredPresentation. Edit the supplied light hero into its dark-mode counterpart. Preserve exactly the composition, phone position and perspective, avatar source and two intermediate morph tiles, flowing transition trails, final bubble outline and anchor pointer, profile icon, three menu rows and cyan bottom button. Change only surface palette and lighting: phone body dark graphite metal, phone UI deep charcoal/navy with muted slate placeholders; final bubble smoked translucent charcoal liquid glass with luminous ice-blue/lavender/coral edge highlights; title and menu placeholder bars pale silver for clear contrast; vibrant cyan, violet and coral icons; cyan action button. Premium clean 3D polish, restrained localized glow, high readability when displayed on GitHub dark mode (#0d1117). CRITICAL: preserve genuine RGBA transparency outside all shapes and trails, including space around and between the phone and bubble. Do not add any black/navy backdrop, floor, background panel, checkerboard, broad haze, text, logos or watermark. Keep framing and all silhouettes unchanged so the light and dark assets make a coherent matched pair.
-

@@ -1,6 +1,6 @@
 # 1.0.0 release validation
 
-Version 1.0.0 preserves the native implementation tested in development version 0.1.2. The release updates version metadata and documentation. The release package is rebuilt from the tagged source with Titanium SDK 13.4.1.GA and Xcode 27.1 beta, and checked for ZIP integrity, embedded identity/version, and device arm64 plus simulator arm64/x86_64 slices. These build/package checks are separate from the historical runtime evidence below.
+Version 1.0.0 preserves the native implementation tested in development version 0.1.2. The release updates version metadata and documentation. The release package is rebuilt from the tagged source with Titanium SDK 13.4.1.GA and Xcode 27.1 beta, and checked for ZIP integrity, embedded identity/version, and device arm64 plus simulator arm64/x86_64 slices. The build uses a process-local Titanium Xcode detection override because SDK 13.4.1.GA declares support only through Xcode 26; the installed SDK and global Xcode selection are unchanged. These build/package checks are separate from the historical runtime evidence below.
 
 # Historical 0.1.2 validation
 

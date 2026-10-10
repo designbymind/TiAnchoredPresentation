@@ -9,14 +9,14 @@ extern NSData* filterDataInRange(NSData* thedata, NSRange range);
 
 - (NSData *)moduleAsset
 {
-
+  
 
   return nil;
 }
 
 - (NSData *)resolveModuleAsset:(NSString *)path
 {
-
+  
 
   return nil;
 }

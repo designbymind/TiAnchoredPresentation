@@ -1,5 +1,11 @@
 # TiAnchoredPresentation
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/ti-anchoredpresentation-hero-dark-transparent.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/ti-anchoredpresentation-hero-light-transparent.png">
+  <img alt="An avatar control morphing into an anchored glass popover with custom content" src="assets/ti-anchoredpresentation-hero-light-transparent.png" width="720">
+</picture>
+
 `ti.anchoredpresentation` presents native action sheets and custom-content popovers from Titanium views, buttons, navigation bar buttons, and toolbar items.
 
 Version **1.0.0**, with optional manual scroll-inset control, native zoom, and an iOS 26+ deployment target. Requires Titanium SDK 13.4.1+ and Xcode 26+. UIKit controls the presentation animation, material, arrows, and dismissal. `isMorphingSupported()` returns true on every supported OS; it does not guarantee that every custom source has the same animation.

@@ -136,7 +136,7 @@ Events:
 - `click`: action sheet selection after dismissal; `{ id, index, title, style, enabled }`. Index refers to the original configured action array.
 - `dismiss`: emitted once after cleanup; `{ reason: 'action' | 'cancel' | 'outside' | 'programmatic' | 'error' }`.
 
-Source/content validation errors throw a Titanium exception. This module uses public UIKit APIs, with no custom animator or SwiftUI dependency. Arbitrary destination-window zoom transitions remain in TiZoomTransition.
+Source/content validation errors throw a Titanium exception. This module uses public UIKit APIs, with no custom animator or SwiftUI dependency. Arbitrary destination-window zoom transitions remain in [TiZoomTransition](https://github.com/designbymind/TiZoomTransition).
 
 ## Validation
 

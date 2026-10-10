@@ -1,0 +1,19 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 1.0.0
+apiversion: 2
+architectures: arm64 x86_64
+mac: false
+description: Native anchored action sheets and custom-content popovers
+author: DesignByMind LLC
+license: MIT
+copyright: Copyright (c) 2026 by DesignByMind LLC
+
+# these should not be edited
+name: TiAnchoredPresentation
+moduleid: ti.anchoredpresentation
+guid: 85b3fa55-a3e4-4a49-8143-9539f11338b2
+platform: iphone
+minsdk: 13.4.1.GA

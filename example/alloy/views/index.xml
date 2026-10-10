@@ -1,0 +1,13 @@
+<Alloy>
+    <NavigationWindow id="nav" platform="ios">
+        <Window id="win" title="Anchored presentations">
+            <Button id="button" title="Normal button → popover" onClick="showButton" />
+            <View id="card" onClick="showCard">
+                <Label text="Normal view → confirmation" />
+            </View>
+            <View id="avatar" onClick="showAvatar">
+                <Label id="avatarInitials" text="JM" />
+            </View>
+        </Window>
+    </NavigationWindow>
+</Alloy>

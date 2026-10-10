@@ -1,0 +1,12 @@
+<Alloy>
+    <View id="content">
+        <Label text="Custom Titanium content" />
+        <TableView id="list">
+            <TableViewRow title="First item" />
+            <TableViewRow title="Second item" />
+            <TableViewRow title="Third item" />
+        </TableView>
+        <Button title="Resize popover" onClick="resize" />
+        <Button title="Close" onClick="close" />
+    </View>
+</Alloy>

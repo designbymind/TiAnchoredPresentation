@@ -1,0 +1,4 @@
+"#content": { width: Ti.UI.FILL, height: Ti.UI.FILL, layout: 'vertical' },
+"Label": { top: 20, height: 30, color: '#222' },
+"#list": { top: 12, height: 110 },
+"Button": { top: 10, height: 40 }

@@ -72,6 +72,19 @@ A toolbar is not required to anchor custom content. `avatar` can be a visible or
 
 `arrowDirections: 0` directly requests UIKit's arrowless popover. It is not an animated bubble mode: a standalone UIKit test on iOS 27.0 reproduced an abrupt entrance from an ordinary button, while the standard toolbar item continued animating its separate glass chrome. Use the default arrow setting when native animation is the priority. The module supplies no replacement animator, custom chrome, or glass workaround. The Classic and Alloy examples use the default setting.
 
+## Popover background and shadow (iOS 26+)
+
+`popoverBackgroundColor` tints the whole popover chrome, bubble and arrow, instead of the system material. Use it when the content has its own surface, for example an inverted dark popover over a light screen. Without it the popover keeps UIKit's default material.
+
+```js
+const popover = Anchored.createPopover({ contentView: content, width: 300, height: 240 });
+popover.popoverBackgroundColor = '#141414';
+popover.popoverShadow = { color: '#000000', opacity: 0.35, radius: 20, offsetX: 0, offsetY: 10 };
+popover.show({ sourceView: button });
+```
+
+`popoverShadow` is `{ color, opacity, radius, offsetX, offsetY }` (defaults: black, 0.25, 16, 0, 8). It is applied to UIKit's popover container as soon as it exists, fades in alongside the presentation and fades out when dismissal starts. Both properties are read at `show()`, like the other configuration properties. Keep the content root transparent if you want the system material, or give it an opaque background that matches `popoverBackgroundColor`.
+
 ## Native zoom transition (iOS 26+)
 
 ```js

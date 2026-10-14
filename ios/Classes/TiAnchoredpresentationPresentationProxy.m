@@ -243,6 +243,13 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   UIPopoverPresentationController *popover = controller.popoverPresentationController;
   [source configure:popover rect:rect];
   popover.permittedArrowDirections = arrows;
+  // Optional: tint the popover chrome (bubble + arrow) instead of the system
+  // material. Read at show(), like the other configuration properties.
+  id popoverBackground = [self valueForUndefinedKey:@"popoverBackgroundColor"];
+  if (popoverBackground != nil) {
+    TiColor *tint = [TiUtils colorValue:popoverBackground];
+    if (tint != nil) popover.backgroundColor = [tint color];
+  }
   popover.delegate = self;
   controller.modalInPresentation = ![TiUtils boolValue:[self valueForUndefinedKey:@"dismissOnOutsideTap"] def:YES];
   if (content != nil) {

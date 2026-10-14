@@ -74,6 +74,7 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
 @property (nonatomic, assign) BOOL pendingHide;
 @property (nonatomic, assign) BOOL zoomRequested;
 @property (nonatomic, assign) BOOL pendingHideAnimated;
+@property (nonatomic, assign) BOOL shadowApplied;
 @end
 
 @implementation TiAnchoredpresentationPresentationProxy
@@ -262,21 +263,63 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
     [(TiAnchoredpresentationContentController *)controller applyInsetPolicyToView:controller.view];
   }
   BOOL animated = [TiUtils boolValue:[options objectForKey:@"animated"] def:YES];
+  id shadowConfig = [self valueForUndefinedKey:@"popoverShadow"];
+  self.shadowApplied = NO;
   @try {
     [source.presenter presentViewController:controller animated:animated completion:^{
       __typeof__(self) strongSelf = weakSelf;
       if (strongSelf == nil || strongSelf.presentation != controller ||
           strongSelf.state != TiAnchoredpresentationStatePresenting) return;
+      [strongSelf applyShadow:shadowConfig toController:controller];
       strongSelf.state = TiAnchoredpresentationStatePresented;
       if (strongSelf.contentOpened) [strongSelf.content windowDidOpen];
       if ([strongSelf _hasListeners:@"show"]) [strongSelf fireEvent:@"show" withObject:@{@"sourceKind":source.kind}];
       if (strongSelf.pendingHide) [strongSelf dismissAnimated:strongSelf.pendingHideAnimated];
     }];
+    [self applyShadow:shadowConfig toController:controller];
   } @catch (NSException *exception) {
     self.dismissReason = @"error";
     [self finishDismissalForController:controller];
     @throw exception;
   }
+}
+- (UIView *)popoverChromeForController:(UIViewController *)controller
+{
+  // UIKit's popover container; the views between it and our content clip to the
+  // rounded shape, so a shadow set on them would be cut off.
+  for (UIView *v = controller.view.superview; v != nil; v = v.superview) {
+    if ([NSStringFromClass(v.class) containsString:@"PopoverView"]) return v;
+  }
+  return nil;
+}
+- (void)fadeShadowOnChrome:(UIView *)chrome to:(float)opacity duration:(CFTimeInterval)duration
+{
+  CABasicAnimation *fade = [CABasicAnimation animationWithKeyPath:@"shadowOpacity"];
+  fade.fromValue = @(chrome.layer.presentationLayer.shadowOpacity);
+  fade.toValue = @(opacity);
+  fade.duration = duration;
+  fade.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+  chrome.layer.shadowOpacity = opacity;
+  [chrome.layer addAnimation:fade forKey:@"anchoredShadowFade"];
+}
+// Optional drop shadow: { color, opacity, radius, offsetX, offsetY }. Applied as soon as
+// UIKit has built the popover container and faded in alongside the presentation, so it does
+// not pop in once the animation ends.
+- (void)applyShadow:(id)config toController:(UIViewController *)controller
+{
+  if (![config isKindOfClass:NSDictionary.class] || self.shadowApplied) return;
+  UIView *chrome = [self popoverChromeForController:controller];
+  if (chrome == nil) return;
+  self.shadowApplied = YES;
+  TiColor *shadowColor = [TiUtils colorValue:config[@"color"]];
+  float target = [TiUtils floatValue:config[@"opacity"] def:0.25];
+  chrome.layer.shadowColor = (shadowColor ? [shadowColor color] : UIColor.blackColor).CGColor;
+  chrome.layer.shadowRadius = [TiUtils floatValue:config[@"radius"] def:16];
+  chrome.layer.shadowOffset = CGSizeMake([TiUtils floatValue:config[@"offsetX"] def:0],
+                                         [TiUtils floatValue:config[@"offsetY"] def:8]);
+  chrome.layer.shadowOpacity = 0;
+  CFTimeInterval duration = controller.transitionCoordinator ? controller.transitionCoordinator.transitionDuration : 0.35;
+  [self fadeShadowOnChrome:chrome to:target duration:MAX(duration, 0.2)];
 }
 - (void)hide:(id)args
 {
@@ -315,6 +358,8 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
 {
   if (self.presentation != controller || self.state != TiAnchoredpresentationStateDismissing) return;
   __weak __typeof__(self) weakSelf = self;
+  UIView *shadowChrome = self.shadowApplied ? [self popoverChromeForController:controller] : nil;
+  if (shadowChrome != nil) [self fadeShadowOnChrome:shadowChrome to:0 duration:0.25];
   if (controller.isBeingDismissed) {
     // Join UIKit's dismissal (e.g. an action selection) instead of issuing a
     // second dismiss request. Every completion is scoped to this controller.

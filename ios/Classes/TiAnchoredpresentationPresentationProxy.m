@@ -1,6 +1,7 @@
 #import "TiAnchoredpresentationPresentationProxy.h"
 #import "TiAnchoredpresentationSource.h"
 #import <TitaniumKit/TiUtils.h>
+#import <TitaniumKit/TiColor.h>
 #import <TitaniumKit/TiViewController.h>
 #import <TitaniumKit/TiWindowProxy.h>
 #import <math.h>
@@ -97,6 +98,39 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   }
   return CGSizeMake(width, height);
 }
+- (UIColor *)validatedBackgroundColor
+{
+  id value = [self valueForUndefinedKey:@"backgroundColor"];
+  if (value == nil || value == [NSNull null]) return nil;
+  TiColor *color = [TiUtils colorValue:value];
+  if (color == nil) {
+    [self fail:@"invalid_background_color" detail:@"backgroundColor must be a Titanium color value or null for the UIKit default"];
+  }
+  return color.color;
+}
+- (NSArray<UIView *> *)validatedPassthroughViewsForSource:(TiAnchoredpresentationSource *)source
+{
+  id value = [self valueForUndefinedKey:@"passthroughViews"];
+  if (value == nil || value == [NSNull null]) return nil;
+  if (![value isKindOfClass:NSArray.class]) {
+    [self fail:@"invalid_passthrough_views" detail:@"passthroughViews must be an array of visible Titanium views"];
+  }
+  NSMutableArray<UIView *> *views = [NSMutableArray array];
+  for (id proxy in value) {
+    if (![proxy isKindOfClass:TiViewProxy.class]) {
+      [self fail:@"invalid_passthrough_view" detail:@"Each passthroughViews entry must be a visible Titanium view"];
+    }
+    // Re-resolve on every show; never cache a view from a recycled row or a
+    // previous presentation. Standard bar items do not expose a native UIView.
+    TiAnchoredpresentationSource *resolved = [TiAnchoredpresentationSource resolve:proxy];
+    UIView *view = [resolved nativeSourceView];
+    if (view == nil || view.window != source.presenter.view.window) {
+      [self fail:@"invalid_passthrough_view" detail:@"Pass-through views must be visible ordinary views in the source window; detached views and bar items are not supported"];
+    }
+    if (![views containsObject:view]) [views addObject:view];
+  }
+  return views;
+}
 - (NSArray *)validatedActions
 {
   id value = [self valueForUndefinedKey:@"actions"];
@@ -182,6 +216,8 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   if (![self isPopover] && [transition isEqual:@"zoom"]) {
     [self fail:@"unsupported_transition" detail:@"The zoom transition is for custom-content popovers"];
   }
+  UIColor *backgroundColor = [self validatedBackgroundColor];
+  NSArray<UIView *> *passthroughViews = [self validatedPassthroughViewsForSource:source];
   UIViewController *controller;
   TiViewProxy *content = nil;
   __weak __typeof__(self) weakSelf = self;
@@ -243,6 +279,8 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   UIPopoverPresentationController *popover = controller.popoverPresentationController;
   [source configure:popover rect:rect];
   popover.permittedArrowDirections = arrows;
+  popover.passthroughViews = passthroughViews;
+  popover.backgroundColor = backgroundColor;
   popover.delegate = self;
   controller.modalInPresentation = ![TiUtils boolValue:[self valueForUndefinedKey:@"dismissOnOutsideTap"] def:YES];
   if (content != nil) {

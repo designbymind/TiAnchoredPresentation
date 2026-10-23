@@ -1,6 +1,6 @@
 const Anchored = require('ti.anchoredpresentation');
 const contentController = Alloy.createController('anchoredContent');
-const popover = Anchored.createPopover({ contentView: contentController.getView(), width: 300, height: 290, transition: 'zoom' });
+const popover = Anchored.createPopover({ contentView: contentController.getView(), width: 300, height: 290, transition: 'zoom', backgroundColor: '#EAF2FF' });
 contentController.on('resize', e => popover.setContentSize({ width: e.width, height: e.height }));
 contentController.on('requestClose', () => popover.hide());
 const confirmation = Anchored.createActionSheet({
@@ -18,8 +18,14 @@ info.addEventListener('click', () => popover.show({ sourceView: info }));
 const toolbarButton = Ti.UI.createButton({ title: 'Toolbar popover' });
 $.win.add(Ti.UI.createToolbar({ bottom: 0, items: [toolbarButton] }));
 toolbarButton.addEventListener('click', () => popover.show({ sourceView: toolbarButton }));
-function showAvatar() { popover.show({ sourceView: $.avatar }); }
-function showButton() { popover.show({ sourceView: $.button }); }
+function showAvatar() {
+    popover.passthroughViews = [$.avatar];
+    popover.show({ sourceView: $.avatar });
+}
+function showButton() {
+    popover.passthroughViews = [];
+    popover.show({ sourceView: $.button });
+}
 function showCard() { confirmation.show({ sourceView: $.card }); }
 $.nav.addEventListener('close', () => {
     popover.hide({ animated: false });

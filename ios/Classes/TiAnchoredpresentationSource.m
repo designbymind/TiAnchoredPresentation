@@ -25,6 +25,35 @@
   }
   return nil;
 }
+// An undimmed sheet can leave its presenting content visible and interactive.
+// Present from that sheet (the topmost controller), while anchoring to the
+// underlying view. This includes DateMaps' persistent custom "bar" detent.
++ (BOOL)canAnchorView:(UIView *)anchor beneathSheet:(UIViewController *)presenter
+{
+  UIPresentationController *presentation = presenter.presentationController;
+  if (![presentation isKindOfClass:UISheetPresentationController.class]) return NO;
+  UISheetPresentationController *sheet = (UISheetPresentationController *)presentation;
+  if (sheet.largestUndimmedDetentIdentifier == nil || sheet.selectedDetentIdentifier == nil) return NO;
+
+  // UIKit requires detents in ascending height order. Only detents at or below
+  // largestUndimmedDetentIdentifier permit interaction with underlying content.
+  NSUInteger selectedIndex = NSNotFound;
+  NSUInteger undimmedIndex = NSNotFound;
+  for (NSUInteger index = 0; index < sheet.detents.count; index++) {
+    UISheetPresentationControllerDetent *detent = sheet.detents[index];
+    if ([detent.identifier isEqualToString:sheet.selectedDetentIdentifier]) selectedIndex = index;
+    if ([detent.identifier isEqualToString:sheet.largestUndimmedDetentIdentifier]) undimmedIndex = index;
+  }
+  if (selectedIndex == NSNotFound || undimmedIndex == NSNotFound || selectedIndex > undimmedIndex) return NO;
+  UIViewController *underlying = presenter.presentingViewController;
+  if (underlying == nil || ![anchor isDescendantOfView:underlying.view]) return NO;
+
+  // A view obscured by the sheet itself is not a visible anchor even when the
+  // rest of the presenting content is undimmed.
+  CGRect anchorRect = [anchor convertRect:anchor.bounds toView:anchor.window];
+  CGRect sheetRect = [presenter.view convertRect:presenter.view.bounds toView:anchor.window];
+  return !CGRectContainsPoint(sheetRect, CGPointMake(CGRectGetMidX(anchorRect), CGRectGetMidY(anchorRect)));
+}
 + (instancetype)resolve:(TiViewProxy *)proxy
 {
   return [self resolve:proxy excluding:nil];
@@ -57,7 +86,7 @@
   UIViewController *presenter = anchor.window.rootViewController;
   while (presenter.presentedViewController != nil && presenter.presentedViewController != excluded) presenter = presenter.presentedViewController;
   if (presenter == nil || presenter.isBeingDismissed || presenter.isBeingPresented || presenter.view.window != anchor.window) return nil;
-  if (![anchor isDescendantOfView:presenter.view]) return nil;
+  if (![anchor isDescendantOfView:presenter.view] && ![self canAnchorView:anchor beneathSheet:presenter]) return nil;
   source.presenter = presenter;
   return source;
 }

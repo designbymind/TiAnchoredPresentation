@@ -25,7 +25,7 @@ const larger = Ti.UI.createButton({ title: 'Resize popover', top: 10, height: 40
 const close = Ti.UI.createButton({ title: 'Close', top: 5, height: 40 });
 content.add(larger);
 content.add(close);
-const popover = Anchored.createPopover({ contentView: content, width: 300, height: 290, transition: 'zoom' });
+const popover = Anchored.createPopover({ contentView: content, width: 300, height: 290, transition: 'zoom', backgroundColor: '#EAF2FF' });
 let expanded = false;
 larger.addEventListener('click', () => {
     expanded = !expanded;
@@ -48,7 +48,10 @@ const avatar = Ti.UI.createView({ left: 24, top: 290, width: 64, height: 64,
     borderRadius: 32, backgroundColor: '#6655dd' });
 avatar.add(Ti.UI.createLabel({ text: 'JM', color: '#fff', font: { fontSize: 24, fontWeight: 'bold' } }));
 win.add(avatar);
-avatar.addEventListener('click', () => popover.show({ sourceView: avatar }));
+avatar.addEventListener('click', () => {
+    popover.passthroughViews = [avatar];
+    popover.show({ sourceView: avatar });
+});
 const toolbarButton = Ti.UI.createButton({ title: 'Toolbar popover' });
 const toolbar = Ti.UI.createToolbar({ bottom: 0, items: [toolbarButton] });
 win.add(toolbar);

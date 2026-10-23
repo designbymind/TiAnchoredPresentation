@@ -1,3 +1,31 @@
+# 1.1.0 public release
+
+This release combines the undimmed-sheet anchor fix, `passthroughViews`, and native popover `backgroundColor`. The DateMaps developer confirmed that the anchor fix and pass-through touches worked, and approved publication after the background-color addition. These reports do not establish exhaustive physical-device, iPad, accessibility, or OS-version coverage.
+
+Release packaging rebuilds the iOS module from the clean release commit on `main`, verifies its 1.1.0 manifest and device arm64 / simulator arm64+x86_64 libraries, and records the source commit and final ZIP SHA-256 in the GitHub release. The runnable Classic and Alloy examples document the new options. Earlier same-version development packages must be replaced and consuming apps cleaned/rebuilt.
+
+# 1.1.0 background-color addition (2026-10-22, same-version rebuild)
+
+Added optional `backgroundColor` configuration, using Titanium's existing color conversion and `UIPopoverPresentationController.backgroundColor`. Validation/conversion runs before native presentation state is acquired; omitted/null values preserve UIKit's default. The backdrop color is applied on every show, and existing pass-through/undimmed-sheet behavior remains intact. No content-view colors or screen dimming are overridden.
+
+Native compilation, distribution-package integrity, architecture checks, and installed-file comparison are separate from visual validation. The DateMaps developer will verify body/arrow appearance, semantic light/dark colors, material behavior, and runtime interactions. Version remains 1.1.0 at the user's request, so consumers must clean/rebuild to replace cached native binaries.
+
+# 1.1.0 pass-through views (2026-10-22)
+
+Added the optional `passthroughViews` configuration for native anchored presentations. Validation converts each visible ordinary Titanium proxy to its current native view before presentation ownership/lifecycle state is acquired, rejects invalid or detached entries, and assigns the resolved array to `UIPopoverPresentationController.passthroughViews`. The list is re-resolved on each show; UIKit owns native touch dispatch. Existing undimmed-sheet anchor handling is preserved.
+
+The DateMaps developer reported `passthroughViews` working properly after installing this update. No device model, OS version, or exhaustive interaction matrix was recorded with that report. Static/native build and package verification are separate evidence; nested-sheet interactions and broader device coverage remain manual checks.
+
+# 1.0.1 undimmed-sheet anchor fix (2026-10-22)
+
+A native debugger inspection of the running DateMaps iOS 27.0 simulator identified the failed check as `isDescendantOfView:presenter.view` in `TiAnchoredpresentationSource`. The tapped `TiUIButton` had a window, 68 x 36 bounds, alpha 1, and no hidden/transparent ancestors. The topmost presenter was the persistent 80-point sheet at custom detent `bar`, with `largestUndimmedDetentIdentifier` set to `medium`. The source remained in the underlying drawer/navigation content, outside that sheet's view hierarchy. This is a presentation-owner conflict rather than evidence of a detached/recycled source.
+
+The resolver now permits an underlying source only when the topmost presenter is an undimmed sheet at or below its configured undimmed detent, the source belongs to that sheet's presenting content, and the sheet does not cover the source center. Presentation still comes from the topmost sheet. The existing attachment, bounds, ancestor visibility, presenter transition/window, and other modal checks remain in place.
+
+An isolated UIKit harness compiled the exact resolver source with minimal Titanium proxy stubs. On an iOS 27.0 simulator, all 17 checks passed: ordinary source resolution; three popover presentation/dismissal cycles from the sheet, replacing the source button between cycles; source-provider resolution while excluding the active popover; and rejection of hidden, transparent, empty, detached, sheet-covered, dimmed-sheet, and full-screen-modal-covered sources. This exercises real UIKit presentations and the resolver logic, but does not reproduce Titanium TableView recycling or prove DateMaps/device behavior after installation.
+
+Native module builds passed for device arm64 and simulator arm64/x86_64 using Titanium SDK 13.4.1.GA and Xcode 27.1 beta. DateMaps build and physical-device verification remain separate checks.
+
 # 1.0.0 release validation
 
 Version 1.0.0 preserves the native implementation tested in development version 0.1.2. The release updates version metadata and documentation. The release package is rebuilt from the tagged source with Titanium SDK 13.4.1.GA and Xcode 27.1 beta, and checked for ZIP integrity, embedded identity/version, and device arm64 plus simulator arm64/x86_64 slices. The build uses a process-local Titanium Xcode detection override because SDK 13.4.1.GA declares support only through Xcode 26; the installed SDK and global Xcode selection are unchanged. These build/package checks are separate from the historical runtime evidence below.

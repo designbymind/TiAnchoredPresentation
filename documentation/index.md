@@ -2,7 +2,7 @@
 
 `ti.anchoredpresentation` presents native action sheets and custom-content popovers from Titanium views, buttons, navigation bar buttons, and toolbar items.
 
-Version **1.0.0**, with optional manual scroll-inset control, native zoom, and an iOS 26+ deployment target. Requires Titanium SDK 13.4.1+ and Xcode 26+. UIKit controls the presentation animation, material, arrows, and dismissal. `isMorphingSupported()` returns true on every supported OS; it does not guarantee that every custom source has the same animation.
+Version **1.1.0**, with pass-through touches, native popover background colors, support for visible anchors beneath undimmed sheets, optional manual scroll-inset control, native zoom, and an iOS 26+ deployment target. Requires Titanium SDK 13.4.1+ and Xcode 26+. UIKit controls the presentation animation, material, arrows, and dismissal. `isMorphingSupported()` returns true on every supported OS; it does not guarantee that every custom source has the same animation.
 
 ## Installation
 
@@ -10,11 +10,11 @@ Download the module ZIP from the [GitHub releases](https://github.com/designbymi
 
 ```xml
 <modules>
-  <module platform="iphone" version="1.0.0">ti.anchoredpresentation</module>
+  <module platform="iphone" version="1.1.0">ti.anchoredpresentation</module>
 </modules>
 ```
 
-When upgrading from a development build, install 1.0.0 and update the module version in your app.
+When upgrading from an earlier version, install 1.1.0 and update the module version in your app. If replacing a development build that already uses 1.1.0, clean and rebuild the app so it links the new native binary.
 
 Set your app's minimum iOS version to 26 or later with `<ios><min-ios-ver>26.0</min-ios-ver></ios>` in `tiapp.xml` (merge into the existing `<ios>` section). See [Classic example](example/app.js) and [Alloy example](example/alloy/).
 
@@ -50,6 +50,41 @@ popover.hide();
 Use a dedicated, unattached view tree as `contentView`. Its children can include buttons, labels, images, scroll views, TableViews, ListViews, and other view proxies. Windows and NavigationWindows are not content views. The root should normally use `Ti.UI.FILL`; its container size is supplied by the popover's numeric `width` and `height` in points (defaults 320 × 240). UIKit may constrain the requested size to available space. UIKit supplies the native background and chrome; opaque content backgrounds can obscure the system material.
 
 Custom content stays in a popover on compact-width iPhone layouts. The proxy forwards Titanium view open/close lifecycle notifications and lays out content as UIKit changes bounds. The same presentation proxy can be shown again after dismissal. Content can be updated through ordinary Titanium APIs; replace `contentView` only while hidden.
+
+## Popover background color
+
+Set `backgroundColor` on the presentation to request a native backdrop color, including the arrow when UIKit displays one:
+
+```js
+const popover = Anchored.createPopover({
+    contentView: tutorialContent,
+    width: 300,
+    height: 88,
+    backgroundColor: '#007AFF'
+});
+```
+
+Titanium color strings and semantic color names are accepted. Omit the property or set it to `null` to use UIKit's default. The value is converted and applied on each `show()`; change it while hidden. Invalid colors throw `invalid_background_color` before presentation begins.
+
+In Alloy, a color already supplied by TSS can be reused with `backgroundColor: $.content.backgroundColor`. This colors the native popover backdrop rather than the screen dimming overlay, and does not overwrite backgrounds on your content views. Keep content backgrounds transparent, or give them the same color, for a consistent appearance. UIKit still controls the material, opacity, and final arrow/chrome rendering; this option does not add a custom background view or promise a flat opaque fill. Anchored action sheets can use the same backdrop option where UIKit presents them as popovers, but UIKit owns their action-row styling.
+
+## Pass-through touches
+
+Set `passthroughViews` to an array of ordinary Titanium views or buttons that should remain interactive while the popover is visible:
+
+```js
+const popover = Anchored.createPopover({
+    contentView: tutorialContent,
+    width: 300,
+    height: 88,
+    passthroughViews: [aiButton]
+});
+popover.show({ sourceView: aiButton });
+```
+
+Omit the property or use `[]` to keep outside views blocked by the popover. UIKit delivers touches to the listed views; their handlers can explicitly call `hide()` when appropriate. This does not bypass a dimmed sheet or another blocking modal.
+
+The property is read and native views are resolved on every `show()`. Change the list while hidden and supply current proxies when replacing views. Each entry must be a visible view in the source window; detached/hidden views, non-view values, and navigation/toolbar bar items are rejected before presentation. A visible ordinary Button, ImageView, or container View is supported. Passing a container also permits interaction with its descendants. The same configuration is available for anchored action sheets where UIKit presents them as popovers.
 
 ## Native presentation from a button, image, or avatar view
 
@@ -118,7 +153,7 @@ At the top, a 52-point top inset intentionally creates 52 points of space in the
 - `setContentSize({ width, height })`: resize a custom-content popover or configure its next presentation.
 - `isMorphingSupported()`: retained module method; always true for supported iOS 26+ deployments.
 
-`sourceView` accepts any visible `TiViewProxy` with a native view. Navigation/toolbar sources preserve an already attached `UIBarButtonItem`. The resolver never creates a bar item for an ordinary view. Views hidden behind another modal controller, detached/recycled views, invisible sources, and non-view objects are rejected. Keep the source alive and attached through dismissal.
+`sourceView` accepts any visible `TiViewProxy` with a native view. Navigation/toolbar sources preserve an already attached `UIBarButtonItem`. The resolver never creates a bar item for an ordinary view. Views hidden behind another modal controller, detached/recycled views, invisible sources, and non-view objects are rejected. A source in the presenting content beneath a sheet is allowed while the sheet is at or below its configured `largestUndimmedDetentIdentifier` and does not cover the source center. The sheet remains the presentation owner; it is not dismissed or reparented. Keep the source alive and attached through dismissal.
 
 `sourceRect` is optional `{ x, y, width, height }` in the normal source view's coordinates. Omit it to anchor to the full source item. Sub-rectangles are not supported for bar-item sources. `arrowDirections` is a bitmask: none=0, up=1, down=2, left=4, right=8, any=15 (default). UIKit decides the final placement and animation.
 

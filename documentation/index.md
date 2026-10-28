@@ -16,7 +16,7 @@ Download the module ZIP from the [GitHub releases](https://github.com/designbymi
 
 When upgrading from an earlier version, install 1.2.1 and update the module version in your app. If replacing a development build that already uses 1.2.1, clean and rebuild the app so it links the new native binary.
 
-Set your app's minimum iOS version to 26 or later with `<ios><min-ios-ver>26.0</min-ios-ver></ios>` in `tiapp.xml` (merge into the existing `<ios>` section). See [Classic example](example/app.js) and [Alloy example](example/alloy/).
+Set your app's minimum iOS version to 26 or later with `<ios><min-ios-ver>26.0</min-ios-ver></ios>` in `tiapp.xml` (merge into the existing `<ios>` section). See [Classic example](../example/app.js) and [Alloy example](../example/alloy/).
 
 ## Action sheets
 
@@ -141,11 +141,11 @@ The `contentInsets` property assignment was also verified on SDK 13.4.1.GA; exam
 
 Titanium's `setContentInsets()` applies to the current native table. Reapply it when presenting reused content, as in the example.
 
-After the content host finishes its first appearance, it refreshes each native TableView once without animation. This invalidates stale grouped-section spacing measured before UIKit established the popover context; it does not add/remove your explicit insets or reset the scroll position. See [first-show TableView regression example](example/firstShowTable.js).
+After the content host finishes its first appearance, it refreshes each native TableView once without animation. This invalidates stale grouped-section spacing measured before UIKit established the popover context; it does not add/remove your explicit insets or reset the scroll position. See [first-show TableView regression example](../example/firstShowTable.js).
 
 The module uses UIKit's `contentInsetAdjustmentBehavior = .never`, without changing your contentInset or contentOffset. It applies the policy to scroll views added during layout, and restores their original policy after completed dismissal so reused content is not permanently modified. It does not remove explicit table headers/section padding, layout offsets, your own top inset, or UIKit's normal scrolling/bounds clamping.
 
-At the top, a 52-point top inset intentionally creates 52 points of space in the table's scrolling content. For a header overlay of height 52, position the TableView at top 0 and use that inset to clear the overlay. If the TableView is already positioned below the header, adding another 52-point inset reserves the header space again. See [manual-inset example](example/manualInsets.js).
+At the top, a 52-point top inset intentionally creates 52 points of space in the table's scrolling content. For a header overlay of height 52, position the TableView at top 0 and use that inset to clear the overlay. If the TableView is already positioned below the header, adding another 52-point inset reserves the header space again. See [manual-inset example](../example/manualInsets.js).
 
 ## Optional screen dimming
 
@@ -192,7 +192,7 @@ const bubble = Anchored.createPopover({
 
 Omit this array (or use `shape: 'auto'`) for automatic detection. A circle is the largest centered circle inside the view's untransformed bounds, rather than an oval filling nonsquare bounds. The view's 2D transform is then applied to the cutout. A capsule fills the bounds with a radius of half the shorter side. `roundedRect` requires a finite, nonnegative `cornerRadius` in points, clamped to half the shorter side. Overrides use the Titanium view's bounds, respect ancestor clipping, and affect only visual dimming; UIKit's pass-through hit areas remain unchanged. They take effect only when dimming and pass-through exclusions are enabled, and are read on each show. Invalid shapes, radii, duplicate overrides, and references outside `passthroughViews` throw before presentation.
 
-See the [Classic dimming example](example/dimming.js) for automatic versus explicit shapes, overlapping cutouts, moving views, and reopening; the [Alloy example](example/alloy/) demonstrates a circle override for an avatar. See [release history](CHANGELOG.md) for changes since the previous public version.
+See the [Classic dimming example](../example/dimming.js) for automatic versus explicit shapes, overlapping cutouts, moving views, and reopening; the [Alloy example](../example/alloy/) demonstrates a circle override for an avatar. See [release history](https://github.com/designbymind/TiAnchoredPresentation/blob/main/CHANGELOG.md) for changes since the previous public version.
 
 ## Shared API
 
@@ -218,7 +218,7 @@ Source/content validation errors throw a Titanium exception. This module uses pu
 
 ## Validation
 
-See [validation notes](documentation/validation.md) for compile/package results and the device interaction checklist. Compilation alone does not prove the precise morphing appearance for every source type.
+See [validation notes](validation.md) for compile/package results and the device interaction checklist. Compilation alone does not prove the precise morphing appearance for every source type.
 
 ## License
 

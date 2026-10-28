@@ -1,6 +1,6 @@
 const Anchored = require('ti.anchoredpresentation');
 const contentController = Alloy.createController('anchoredContent');
-const popover = Anchored.createPopover({ contentView: contentController.getView(), width: 300, height: 290, transition: 'zoom', backgroundColor: '#EAF2FF' });
+const popover = Anchored.createPopover({ contentView: contentController.getView(), width: 300, height: 290, transition: 'zoom', backgroundColor: '#EAF2FF', dimmingEnabled: true, dimmingOpacity: 0.35, dimmingExcludesPassthroughViews: true });
 contentController.on('resize', e => popover.setContentSize({ width: e.width, height: e.height }));
 contentController.on('requestClose', () => popover.hide());
 const confirmation = Anchored.createActionSheet({
@@ -20,10 +20,12 @@ $.win.add(Ti.UI.createToolbar({ bottom: 0, items: [toolbarButton] }));
 toolbarButton.addEventListener('click', () => popover.show({ sourceView: toolbarButton }));
 function showAvatar() {
     popover.passthroughViews = [$.avatar];
+    popover.dimmingCutoutShapes = [{ view: $.avatar, shape: 'circle' }];
     popover.show({ sourceView: $.avatar });
 }
 function showButton() {
     popover.passthroughViews = [];
+    popover.dimmingCutoutShapes = [];
     popover.show({ sourceView: $.button });
 }
 function showCard() { confirmation.show({ sourceView: $.card }); }

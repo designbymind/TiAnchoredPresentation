@@ -1,3 +1,41 @@
+# 1.2.1 rounded cutout shapes
+
+Automatic cutouts now follow the Titanium visual wrapper rather than relying only on the native touch target. The overlay uses public layer corner radii, masked corners, filled shape-layer masks, rounded ancestor clipping, and UIButton capsule configuration. Explicit `dimmingCutoutShapes` entries select circle, capsule, roundedRect, or auto without changing UIKit pass-through targets, presentation controllers, or system/zoom animations. Circle overrides are inscribed and centered; radii are validated and clamped. Shapes are converted through ordinary 2D layer transforms, compared by path geometry, and cleared separately to preserve overlapping holes. Complex alpha/image masks, continuous-corner curves, and 3D perspective are outside the exact-shape contract.
+
+The developer confirmed the 1.2.1 build was working before requesting publication. This report supplements the checks below and does not establish exhaustive device/OS coverage. The public release is rebuilt from its exact tagged source commit; package identity, architectures, deployment targets, and the uploaded asset hash are verified separately.
+
+Validation with Xcode 27.1 beta, Titanium SDK 13.4.1.GA, and iOS 27.0 Simulator:
+
+- Device arm64 and simulator arm64/x86_64 compilation passed with minimum iOS 26.
+- The production dimming-view geometry fixture passed 22 checks, including all original opacity/overlap/visibility/clipping/cleanup cases, Titanium-style wrappers around inner controls, individual rounded corners, shape-layer masks, configured UIKit capsules, all explicit shapes, zero/clamped radii, rounded ancestor clipping, and 2D rotation.
+- A real Titanium consumer rejected 11 invalid override configurations before presentation, including wrong containers/entries, unknown shapes, missing/negative/nonfinite/nonnumeric radii, duplicate overrides, and non-pass-through views.
+- The shape-enabled lifecycle fixture passed 40 shows/40 dismissals while cycling auto/circle/capsule/roundedRect, native zoom/system presentations, dimming off/zero opacity, immediate reopen/early hide requests, and action sheets.
+- Simulator UI screenshots confirmed automatic rounded button/circular avatar cutouts without the previous rectangle corners, and explicit capsule/circle/roundedRect overrides. A pass-through Help tap updated the underlying label while the bubble stayed open; Close dismissed it before reopening with explicit shapes.
+
+Physical-device gesture/cancellation parity, every UIKit configuration/mask, 3D perspective, iPad, and accessibility variations remain separate interaction checks. No global module installation or DateMaps changes were performed for this validation.
+
+# 1.2.0 optional dimming overlay
+
+Adds a noninteractive per-presentation UIKit overlay below native presentation containers, with optional pass-through cutouts. Native controller animations remain system-managed. Cutout tracking uses a weak display-link target and weak view references, stops on removal, and redraws only when geometry changes. Overlapping cutouts are cleared individually. Native transition-coordinator completions restore alpha on cancellation; cleanup removes the overlay before dismiss listeners can reopen the proxy.
+
+Validated with Titanium SDK 13.4.1.GA and Xcode 27.1 beta:
+
+- Native compilation/package: iOS device arm64 and simulator arm64/x86_64, minimum iOS 26.
+- An isolated real Titanium consumer on iOS 27.0 passed 40 shows/40 dismissals, immediate reopen, early/duplicate hides, native zoom/system transitions, action sheets, dimming off, zero opacity, and optional exclusions. No module global install or DateMaps edits were needed.
+- The isolated native geometry fixture passed 11 checks: noninteractive/accessibility configuration, opacity, clear/rounded/overlapping cutouts, hidden/moved/detached views, ancestor clipping, display-link removal, and full dimming without a display link.
+- Four invalid opacity values (-0.1, 1.1, NaN, Infinity) were rejected through the real Titanium bridge before presentation.
+- Simulator UI checks confirmed the clear pass-through Help button received a tap while the bubble remained open, movement updated the cutouts, a fully dimmed pass-through button still received a second tap, and both the content Close button and UIKit outside-dismiss region dismissed the bubble. The settled dimmed presentation was visually inspected.
+
+These checks do not prove cancelled interactive drag behavior, physical-device animation parity, iPad positioning/rotation, keyboard/window teardown, or every accessibility setting. Cancellation restoration is implemented through UIKit transition-coordinator completion; a matched progressed/cancelled native gesture remains a device interaction check. Existing first-show TableView changes are preserved.
+
+# 1.1.1 first-show TableView layout correction (2026-10-22)
+
+The supplied DateMaps recording shows an extra gap below the table header on initial presentation, with footer actions clipped. Native measurements in the running iOS 27.0 simulator established that this was not a nonzero content inset: the event TableView had `contentInset` and `adjustedContentInset` of 0, offset `{0, 0}`, a 92-point table header, and a first-row Y of 127. `sectionHeaderTopPadding` was already 0. Re-registering the table header did not change the gap; a native `beginUpdates`/`endUpdates` sizing pass moved the first row to 92 while preserving the header height, insets, and offset.
+
+An isolated real Titanium SDK 13.4.1.GA consumer with the released 1.1.0 module, an inset-grouped TableView, automatic-height header, native zoom transition, and persistent undimmed sheet reproduced the same 127-versus-92 geometry. A separate UIKit harness with minimal Titanium host stubs did not reproduce the baseline bug, so that harness alone is not regression proof; it did verify the candidate correction preserves explicit top/bottom insets 52/80 and content offset -52, as well as ordinary plain-table layout.
+
+The patch refreshes each native table once from the content host's `viewDidAppear:` callback. A candidate in `viewDidLayoutSubviews` with a non-null window ran too early and failed the real Titanium regression; the appearance callback passed. A weak per-host table set guards reentrant layout and does not retain discarded tables. It does not hardcode a spacing adjustment, reload table data, change the application's inset opt-in, or reset content offsets. The module-only `example/firstShowTable.js` creates fresh grouped-table content for repeated visual checks. The final 1.1.1 candidate passed the real Titanium first-show regression: header height 92, first-row Y 92, zero content/adjusted insets, and offset zero. A second real Titanium run with automatic adjustment disabled preserved explicit insets top 52/bottom 80, adjusted insets 52/80, and offset -52; the first row remained at Y 92. Both used iOS 27.0, native zoom, and the persistent undimmed sheet. Native distribution compilation passed for device arm64 and simulator arm64/x86_64. Physical-device validation remains separate.
+
 # 1.1.0 public release
 
 This release combines the undimmed-sheet anchor fix, `passthroughViews`, and native popover `backgroundColor`. The DateMaps developer confirmed that the anchor fix and pass-through touches worked, and approved publication after the background-color addition. These reports do not establish exhaustive physical-device, iPad, accessibility, or OS-version coverage.

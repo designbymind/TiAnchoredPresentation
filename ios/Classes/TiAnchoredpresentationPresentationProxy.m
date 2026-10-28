@@ -1,5 +1,6 @@
 #import "TiAnchoredpresentationPresentationProxy.h"
 #import "TiAnchoredpresentationSource.h"
+#import "TiAnchoredpresentationDimmingView.h"
 #import <TitaniumKit/TiUtils.h>
 #import <TitaniumKit/TiColor.h>
 #import <TitaniumKit/TiViewController.h>
@@ -7,9 +8,12 @@
 #import <math.h>
 
 @interface TiAnchoredpresentationContentController : TiViewController
+@property (nonatomic, copy) void (^willAppear)(UIViewController *controller);
+@property (nonatomic, copy) void (^willDisappear)(UIViewController *controller);
 @property (nonatomic, copy) void (^didDisappear)(UIViewController *controller);
 @property (nonatomic, assign) BOOL disableAutomaticScrollInsets;
 @property (nonatomic, strong) NSMapTable<UIScrollView *, NSNumber *> *originalInsetPolicies;
+@property (nonatomic, strong) NSHashTable<UITableView *> *presentationLayoutTables;
 - (void)applyInsetPolicyToView:(UIView *)view;
 - (void)restoreInsetPolicy;
 @end
@@ -29,6 +33,25 @@
   }
   for (UIView *child in view.subviews) [self applyInsetPolicyToView:child];
 }
+- (void)refreshInitialTableLayoutInView:(UIView *)view
+{
+  if ([view isKindOfClass:UITableView.class]) {
+    UITableView *table = (UITableView *)view;
+    if (self.presentationLayoutTables == nil) self.presentationLayoutTables = [NSHashTable weakObjectsHashTable];
+    if (![self.presentationLayoutTables containsObject:table]) {
+      // A table laid out before attachment can cache grouped-section spacing
+      // for its previous presentation context. Recalculate once in this window.
+      // Record it first: the update can synchronously reenter controller layout.
+      [self.presentationLayoutTables addObject:table];
+      [UIView performWithoutAnimation:^{
+        [table beginUpdates];
+        [table endUpdates];
+        [table layoutIfNeeded];
+      }];
+    }
+  }
+  for (UIView *child in view.subviews) [self refreshInitialTableLayoutInView:child];
+}
 - (void)restoreInsetPolicy
 {
   self.disableAutomaticScrollInsets = NO;
@@ -47,6 +70,23 @@
   [proxy layoutChildrenIfNeeded];
   [self applyInsetPolicyToView:self.view];
 }
+- (void)viewWillAppear:(BOOL)animated
+{
+  [super viewWillAppear:animated];
+  if (self.willAppear != nil) self.willAppear(self);
+}
+- (void)viewWillDisappear:(BOOL)animated
+{
+  [super viewWillDisappear:animated];
+  if (self.isBeingDismissed && self.willDisappear != nil) self.willDisappear(self);
+}
+- (void)viewDidAppear:(BOOL)animated
+{
+  [super viewDidAppear:animated];
+  // Initial layout can precede the final presentation context even with a window.
+  // Refresh section geometry once after Titanium and UIKit finish appearance.
+  [self refreshInitialTableLayoutInView:self.view];
+}
 - (void)viewDidDisappear:(BOOL)animated
 {
   [super viewDidDisappear:animated];
@@ -64,6 +104,7 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
 };
 
 @interface TiAnchoredpresentationPresentationProxy ()
+@property (nonatomic, strong) TiAnchoredpresentationDimmingView *dimmingOverlay;
 @property (nonatomic, strong) UIViewController *presentation;
 @property (nonatomic, strong) TiAnchoredpresentationSource *source;
 @property (nonatomic, strong) TiViewProxy *content;
@@ -130,6 +171,75 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
     if (![views containsObject:view]) [views addObject:view];
   }
   return views;
+}
+- (NSArray<TiAnchoredpresentationDimmingExclusion *> *)validatedDimmingExclusions
+{
+  NSArray *proxies = [self valueForUndefinedKey:@"passthroughViews"];
+  if ((id)proxies == [NSNull null]) proxies = nil;
+  id overrides = [self valueForUndefinedKey:@"dimmingCutoutShapes"];
+  if (overrides == nil || overrides == [NSNull null]) overrides = @[];
+  if (![overrides isKindOfClass:NSArray.class]) {
+    [self fail:@"invalid_dimming_cutout_shapes" detail:@"dimmingCutoutShapes must be an array of { view, shape, cornerRadius? } dictionaries"];
+  }
+  NSMapTable *shapes = [NSMapTable strongToStrongObjectsMapTable];
+  for (id entry in overrides) {
+    if (![entry isKindOfClass:NSDictionary.class]) {
+      [self fail:@"invalid_dimming_cutout_shape" detail:@"Each dimmingCutoutShapes entry must be a dictionary"];
+    }
+    id proxy = entry[@"view"];
+    id shape = entry[@"shape"];
+    if (![proxy isKindOfClass:TiViewProxy.class] || ![proxies containsObject:proxy] || [shapes objectForKey:proxy] != nil) {
+      [self fail:@"invalid_dimming_cutout_view" detail:@"Each cutout override must reference a unique view in passthroughViews"];
+    }
+    if (![shape isKindOfClass:NSString.class] || ![@[@"auto", @"circle", @"capsule", @"roundedRect"] containsObject:shape]) {
+      [self fail:@"invalid_dimming_cutout_shape" detail:@"shape must be auto, circle, capsule, or roundedRect"];
+    }
+    id radius = entry[@"cornerRadius"];
+    if (([shape isEqualToString:@"roundedRect"] && radius == nil) ||
+        (radius != nil && (![radius isKindOfClass:NSNumber.class] || !isfinite([radius doubleValue]) || [radius doubleValue] < 0))) {
+      [self fail:@"invalid_dimming_cutout_radius" detail:@"roundedRect requires a finite nonnegative cornerRadius in points"];
+    }
+    [shapes setObject:entry forKey:proxy];
+  }
+  NSMutableArray *exclusions = [NSMutableArray array];
+  for (TiViewProxy *proxy in proxies) {
+    // Native pass-through targets have already been validated. Keep their UIKit
+    // touch routing, while drawing the cutout around the Titanium visual wrapper.
+    UIView *view = [[TiAnchoredpresentationSource resolve:proxy] nativeSourceView];
+    TiAnchoredpresentationDimmingExclusion *exclusion = [TiAnchoredpresentationDimmingExclusion new];
+    exclusion.view = view;
+    exclusion.shapeView = [proxy view];
+    NSDictionary *entry = [shapes objectForKey:proxy];
+    exclusion.shape = entry[@"shape"] ?: @"auto";
+    exclusion.cornerRadius = [entry[@"cornerRadius"] doubleValue];
+    [exclusions addObject:exclusion];
+  }
+  return exclusions;
+}
+- (CGFloat)validatedDimmingOpacity
+{
+  id value = [self valueForUndefinedKey:@"dimmingOpacity"];
+  double opacity = value == nil ? 0.35 : [TiUtils doubleValue:value def:NAN];
+  if (!isfinite(opacity) || opacity < 0 || opacity > 1) {
+    [self fail:@"invalid_dimming_opacity" detail:@"dimmingOpacity must be a finite number between 0 and 1"];
+  }
+  return opacity;
+}
+- (void)animateDimmingForController:(UIViewController *)controller visible:(BOOL)visible
+{
+  if (self.presentation != controller || self.dimmingOverlay == nil) return;
+  TiAnchoredpresentationDimmingView *overlay = self.dimmingOverlay;
+  CGFloat target = visible ? 1 : 0;
+  if (overlay.alpha == target) return;
+  id<UIViewControllerTransitionCoordinator> coordinator = controller.transitionCoordinator;
+  BOOL joined = [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+    overlay.alpha = target;
+  } completion:^(id<UIViewControllerTransitionCoordinatorContext> context) {
+    // UIKit reverses its animation on cancellation; restore the matching model
+    // value too. Capture this overlay, never a later presentation's overlay.
+    overlay.alpha = context.isCancelled ? 1 - target : target;
+  }];
+  if (!joined) overlay.alpha = target;
 }
 - (NSArray *)validatedActions
 {
@@ -216,8 +326,12 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   if (![self isPopover] && [transition isEqual:@"zoom"]) {
     [self fail:@"unsupported_transition" detail:@"The zoom transition is for custom-content popovers"];
   }
+  CGFloat dimmingOpacity = [self validatedDimmingOpacity];
+  BOOL dimmingEnabled = [TiUtils boolValue:[self valueForUndefinedKey:@"dimmingEnabled"] def:NO];
+  BOOL excludesPassthrough = [TiUtils boolValue:[self valueForUndefinedKey:@"dimmingExcludesPassthroughViews"] def:NO];
   UIColor *backgroundColor = [self validatedBackgroundColor];
   NSArray<UIView *> *passthroughViews = [self validatedPassthroughViewsForSource:source];
+  NSArray<TiAnchoredpresentationDimmingExclusion *> *dimmingExclusions = [self validatedDimmingExclusions];
   UIViewController *controller;
   TiViewProxy *content = nil;
   __weak __typeof__(self) weakSelf = self;
@@ -236,6 +350,12 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
     host.preferredContentSize = size;
     host.disableAutomaticScrollInsets = ![TiUtils boolValue:[self valueForUndefinedKey:@"autoAdjustScrollViewInsets"] def:NO];
     host.modalPresentationStyle = UIModalPresentationPopover;
+    host.willAppear = ^(UIViewController *appearing) {
+      if (weakSelf.state == TiAnchoredpresentationStatePresenting) [weakSelf animateDimmingForController:appearing visible:YES];
+    };
+    host.willDisappear = ^(UIViewController *disappearing) {
+      [weakSelf animateDimmingForController:disappearing visible:NO];
+    };
     host.didDisappear = ^(UIViewController *disappeared) {
       [weakSelf observeDisappearanceOfController:disappeared];
     };
@@ -294,15 +414,26 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   }
   BOOL animated = [TiUtils boolValue:[options objectForKey:@"animated"] def:YES];
   @try {
+    if (dimmingEnabled && dimmingOpacity > 0) {
+      UIWindow *window = source.presenter.view.window;
+      self.dimmingOverlay = [[TiAnchoredpresentationDimmingView alloc] initWithWindow:window opacity:dimmingOpacity
+          exclusions:excludesPassthrough ? dimmingExclusions : nil];
+      self.dimmingOverlay.alpha = animated ? 0 : 1;
+      // Insert before UIKit adds its presentation container, leaving all of its
+      // chrome, touch handling and zoom rendering above the noninteractive layer.
+      [window addSubview:self.dimmingOverlay];
+    }
     [source.presenter presentViewController:controller animated:animated completion:^{
       __typeof__(self) strongSelf = weakSelf;
       if (strongSelf == nil || strongSelf.presentation != controller ||
           strongSelf.state != TiAnchoredpresentationStatePresenting) return;
+      [strongSelf animateDimmingForController:controller visible:YES];
       strongSelf.state = TiAnchoredpresentationStatePresented;
       if (strongSelf.contentOpened) [strongSelf.content windowDidOpen];
       if ([strongSelf _hasListeners:@"show"]) [strongSelf fireEvent:@"show" withObject:@{@"sourceKind":source.kind}];
       if (strongSelf.pendingHide) [strongSelf dismissAnimated:strongSelf.pendingHideAnimated];
     }];
+    if (![self isPopover]) [self animateDimmingForController:controller visible:YES];
   } @catch (NSException *exception) {
     self.dismissReason = @"error";
     [self finishDismissalForController:controller];
@@ -347,6 +478,7 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   if (self.presentation != controller || self.state != TiAnchoredpresentationStateDismissing) return;
   __weak __typeof__(self) weakSelf = self;
   if (controller.isBeingDismissed) {
+    [self animateDimmingForController:controller visible:NO];
     // Join UIKit's dismissal (e.g. an action selection) instead of issuing a
     // second dismiss request. Every completion is scoped to this controller.
     id<UIViewControllerTransitionCoordinator> coordinator = controller.transitionCoordinator;
@@ -370,6 +502,7 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
     [controller dismissViewControllerAnimated:animated completion:^{
       [weakSelf finishDismissalForController:controller];
     }];
+    [self animateDimmingForController:controller visible:NO];
   }
 }
 - (void)observeDisappearanceOfController:(UIViewController *)controller
@@ -407,8 +540,12 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
   (void)keepAlive;
   NSDictionary *action = self.selectedAction;
   NSString *reason = self.dismissReason ?: @"outside";
+  [self.dimmingOverlay removeOverlay];
+  self.dimmingOverlay = nil;
   controller.popoverPresentationController.delegate = nil;
   if ([controller isKindOfClass:TiAnchoredpresentationContentController.class]) {
+    ((TiAnchoredpresentationContentController *)controller).willAppear = nil;
+    ((TiAnchoredpresentationContentController *)controller).willDisappear = nil;
     ((TiAnchoredpresentationContentController *)controller).didDisappear = nil;
     [(TiAnchoredpresentationContentController *)controller restoreInsetPolicy];
   }
@@ -478,6 +615,10 @@ typedef NS_ENUM(NSUInteger, TiAnchoredpresentationState) {
 - (BOOL)presentationControllerShouldDismiss:(UIPresentationController *)controller
 {
   return [TiUtils boolValue:[self valueForUndefinedKey:@"dismissOnOutsideTap"] def:YES];
+}
+- (void)presentationControllerWillDismiss:(UIPresentationController *)controller
+{
+  [self animateDimmingForController:controller.presentedViewController visible:NO];
 }
 - (void)presentationControllerDidDismiss:(UIPresentationController *)controller
 {

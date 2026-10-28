@@ -33,6 +33,7 @@
 		3BBC31A601B462B55CC05702 /* TiAnchoredpresentationSource.m in Sources */ = {isa = PBXBuildFile; fileRef = C763847426608C48C5D422CF /* TiAnchoredpresentationSource.m */; };
 		A1FCFC1AECEC228E187FC3D3 /* TiAnchoredpresentationPresentationProxy.h in Headers */ = {isa = PBXBuildFile; fileRef = 399F1282FBF9B52E1096E98D /* TiAnchoredpresentationPresentationProxy.h */; };
 		046A5D7EB14B428EAB338884 /* TiAnchoredpresentationPresentationProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = AF5C2DFFCC84ECFEC466238E /* TiAnchoredpresentationPresentationProxy.m */; };
+		D12000000000000000000001 /* TiAnchoredpresentationDimmingView.m in Sources */ = {isa = PBXBuildFile; fileRef = D12000000000000000000002 /* TiAnchoredpresentationDimmingView.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +60,8 @@
 		C763847426608C48C5D422CF /* TiAnchoredpresentationSource.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "TiAnchoredpresentationSource.m"; path = "Classes/TiAnchoredpresentationSource.m"; sourceTree = "<group>"; };
 		399F1282FBF9B52E1096E98D /* TiAnchoredpresentationPresentationProxy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "TiAnchoredpresentationPresentationProxy.h"; path = "Classes/TiAnchoredpresentationPresentationProxy.h"; sourceTree = "<group>"; };
 		AF5C2DFFCC84ECFEC466238E /* TiAnchoredpresentationPresentationProxy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "TiAnchoredpresentationPresentationProxy.m"; path = "Classes/TiAnchoredpresentationPresentationProxy.m"; sourceTree = "<group>"; };
+		D12000000000000000000002 /* TiAnchoredpresentationDimmingView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = TiAnchoredpresentationDimmingView.m; path = Classes/TiAnchoredpresentationDimmingView.m; sourceTree = "<group>"; };
+		D12000000000000000000003 /* TiAnchoredpresentationDimmingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = TiAnchoredpresentationDimmingView.h; path = Classes/TiAnchoredpresentationDimmingView.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +110,8 @@
 			children = (
 				AF5C2DFFCC84ECFEC466238E /* TiAnchoredpresentationPresentationProxy.m */,
 				399F1282FBF9B52E1096E98D /* TiAnchoredpresentationPresentationProxy.h */,
+				D12000000000000000000002 /* TiAnchoredpresentationDimmingView.m */,
+				D12000000000000000000003 /* TiAnchoredpresentationDimmingView.h */,
 				C763847426608C48C5D422CF /* TiAnchoredpresentationSource.m */,
 				3D6A48637BA0177F1DD4C700 /* TiAnchoredpresentationSource.h */,
 				24DE9E0F11C5FE74003F90F6 /* TiAnchoredpresentationModuleAssets.h */,
@@ -210,6 +215,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				046A5D7EB14B428EAB338884 /* TiAnchoredpresentationPresentationProxy.m in Sources */,
+				D12000000000000000000001 /* TiAnchoredpresentationDimmingView.m in Sources */,
 				3BBC31A601B462B55CC05702 /* TiAnchoredpresentationSource.m in Sources */,
 				24DD6CFA1134B3F500162E58 /* TiAnchoredpresentationModule.m in Sources */,
 				24DE9E1211C5FE74003F90F6 /* TiAnchoredpresentationModuleAssets.m in Sources */,
